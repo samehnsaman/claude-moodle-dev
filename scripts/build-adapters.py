@@ -16,6 +16,8 @@ Frontmatter is parsed from each source file. Body is reused verbatim.
 """
 from __future__ import annotations
 import re
+import json
+import shutil
 from pathlib import Path
 from textwrap import dedent
 
@@ -201,6 +203,85 @@ def build_generic(data) -> None:
     write(ADAPTERS / "generic" / "PROMPTS.md", "\n".join(out))
 
 
+def build_codex(data) -> None:
+    """Package portable knowledge as Codex skills and one project instruction file.
+
+    Claude commands and agents do not have direct Codex equivalents. Their reusable
+    procedures are exposed as skills, which Codex can invoke on demand.
+    """
+    print("Codex...")
+    base = ADAPTERS / "codex" / "skills"
+    if base.exists():
+        shutil.rmtree(base, ignore_errors=True)
+    for _, _, name in data["skills"]:
+        source = SKILLS / name
+        target = base / name
+        target.mkdir(parents=True, exist_ok=True)
+        for item in source.iterdir():
+            if item.name.startswith("._") or item.name == "__pycache__":
+                continue
+            if item.is_file():
+                (target / item.name).write_bytes(item.read_bytes())
+            elif item.is_dir():
+                shutil.copytree(
+                    item, target / item.name, dirs_exist_ok=True,
+                    ignore=shutil.ignore_patterns("._*", "__pycache__"),
+                )
+
+    for fm, body, name in data["commands"]:
+        # Commands become skills with their original workflow and user input made explicit.
+        description = json.dumps(fm.get("description", name), ensure_ascii=False)
+        body = body.replace("User's input: $ARGUMENTS", "User's input: use the details already provided in the task request.")
+        body = body.replace("If `$ARGUMENTS` is empty or missing required values", "If the request omits required values")
+        body = body.replace("$ARGUMENTS", "the user's request and any details they supplied")
+        body = re.sub(r"Activate the `([^`]+)` skill for", r"Read the `\1` skill for", body)
+        content = f"---\nname: {name}\ndescription: {description}\n---\n\n" + body
+        write(base / name / "SKILL.md", content)
+
+    for fm, body, name in data["agents"]:
+        description = json.dumps(fm.get("description", name), ensure_ascii=False)
+        # Preserve the specialist's useful instructions, but remove Claude tool declarations.
+        description = description.replace("Use this agent to", "Use when you need to").replace("Use this agent for", "Use when you need")
+        content = f"---\nname: {name}\ndescription: {description}\n---\n\n" + body
+        write(base / name / "SKILL.md", content)
+
+    write(ADAPTERS / "codex" / "AGENTS.md", """# Moodle plugin development with Codex
+
+This project provides reusable Moodle development skills in `skills/`.
+For Moodle work, identify and use the relevant `moodle-*` skill from
+`.agents/skills/` when installed, or from `adapters/codex/skills/` in this repository.
+
+Follow the target Moodle version and the conventions already present in the plugin.
+Prefer official Moodle developer documentation when a version-specific detail is
+unclear. Preserve existing files and user changes; do not replace an existing plugin
+implementation with a scaffold. Run the checks available in the Moodle checkout and
+report checks that could not be run.
+
+The former Claude slash-command workflows are available as on-demand skills such as
+`moodle-new-plugin`, `moodle-security-review`, and `moodle-bump-version`. The former
+specialist agents are available as `moodle-scaffolder` and `moodle-reviewer` skills.
+""")
+
+    write(ADAPTERS / "codex" / ".codex-plugin" / "plugin.json", """{
+  "name": "moodle-dev",
+  "version": "0.6.0",
+  "description": "Moodle plugin development skills for scaffolding, upgrades, testing, security, privacy, and Moodle 5.3.",
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json"
+}
+""")
+    write(ADAPTERS / "codex" / ".mcp.json", """{
+  "mcpServers": {
+    "moodle_docs": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["--from", "git+https://github.com/SaadRahman01/moodle-mcp", "moodle-mcp"]
+    }
+  }
+}
+""")
+
+
 def main() -> None:
     data = load_all()
     print(f"Loaded {len(data['skills'])} skills, {len(data['agents'])} agents, {len(data['commands'])} commands.\n")
@@ -209,6 +290,7 @@ def main() -> None:
     build_aider(data)
     build_continue(data)
     build_generic(data)
+    build_codex(data)
     print("\nDone. Commit the regenerated files under adapters/.")
 
 

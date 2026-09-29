@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "moodle_docs": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["--from", "git+https://github.com/SaadRahman01/moodle-mcp", "moodle-mcp"]
+    }
+  }
+}

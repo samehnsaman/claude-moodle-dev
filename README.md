@@ -1,11 +1,12 @@
 # moodle-dev
 
 > The most complete Moodle development toolkit for AI coding assistants — skills, slash commands, and subagents that turn your assistant into a Moodle expert.
-> **Native plugin for [Claude Code](https://docs.anthropic.com/claude/docs/claude-code); ships with adapters for [Cursor](adapters/cursor/), [GitHub Copilot](adapters/copilot/), [Aider](adapters/aider/), [Continue](adapters/continue/), and a [paste-anywhere bundle](adapters/generic/PROMPTS.md).**
+> **Native plugin for [Claude Code](https://docs.anthropic.com/claude/docs/claude-code) and a Codex skills adapter; also ships adapters for [Cursor](adapters/cursor/), [GitHub Copilot](adapters/copilot/), [Aider](adapters/aider/), [Continue](adapters/continue/), and a [paste-anywhere bundle](adapters/generic/PROMPTS.md).**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-0.6.0-blue.svg)](CHANGELOG.md)
 [![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-Plugin-8A2BE2.svg)](https://docs.anthropic.com/claude/docs/claude-code)
+[![Codex](https://img.shields.io/badge/OpenAI-Codex%20skills-10A37F.svg)](adapters/codex/)
 [![Cursor](https://img.shields.io/badge/Cursor-Rules-black.svg)](adapters/cursor/)
 [![Copilot](https://img.shields.io/badge/Copilot-Chatmodes-24292e.svg)](adapters/copilot/)
 [![Aider](https://img.shields.io/badge/Aider-Conventions-orange.svg)](adapters/aider/)
@@ -24,7 +25,7 @@ Scaffolds plugins, writes XMLDB upgrades, audits privacy/security, generates PHP
 
 ## Why this plugin
 
-Claude already knows PHP. It does **not** know:
+Coding assistants already know PHP. They do **not** automatically know:
 - Moodle's frankenstyle conventions (`local_<name>`, `mod_<name>`, `block_<name>`, ...)
 - XMLDB editor workflow + `upgrade_plugin_savepoint` rules
 - Privacy API contracts (`null_provider` vs `request\plugin\provider`)
@@ -35,11 +36,40 @@ Claude already knows PHP. It does **not** know:
 - AMD/RequireJS + grunt build
 - Mobile app remote templates + `get_remote_addons`
 
-This plugin teaches Claude all of it. Auto-activates when Claude detects Moodle work.
+The toolkit provides those conventions as reusable, task-triggered skills for supported assistants.
 
 ---
 
 ## Install
+
+### OpenAI Codex
+
+Install the Moodle skills into the Moodle project (or Moodle core checkout) where Codex will work. The installer places the skills under `.agents/skills/` and merges a short Moodle guidance section into the existing `AGENTS.md` without replacing its other content. It updates only the named `moodle-*` skills if installed again.
+
+```bash
+git clone -b wisecat/moodle-5.3 https://github.com/adamjenkins/claude-moodle-dev.git
+cd claude-moodle-dev
+./install.sh codex --dest /path/to/moodle
+```
+
+Restart or start a Codex session in that Moodle project so it can discover the added skills and project instructions. You can also install into one plugin directory if Codex is scoped there.
+
+Ask Codex naturally, or name a skill explicitly. Examples:
+
+```text
+Use $moodle-new-plugin to scaffold a Moodle 5.3 local plugin named attendance
+that stores per-user check-in data. Ask me only for details you cannot infer.
+
+Use $moodle-security-review to review this plugin for capability, sesskey,
+SQL, and file-serving issues. Fix confirmed issues and explain the changes.
+
+Use $moodle-bump-version to add an upgrade step for the new table and update
+version.php consistently with the existing plugin.
+```
+
+The former Claude slash-command workflows and specialist agents are exposed as Codex skills, alongside the Moodle knowledge skills. Codex does not receive Claude's slash-command or subagent wiring. The Codex plugin package and companion Moodle docs MCP configuration are in [`adapters/codex/`](adapters/codex/); its MCP server requires `uvx` when enabled. The installer does not alter your Codex MCP configuration.
+
+The Codex adapter uses the OpenAI plugin manifest format and standard skill folders. See [OpenAI's plugin packaging guide](https://developers.openai.com/api/docs/guides/agents-api/tools/plugins) for supported environments and packaging details.
 
 ### Claude Code: this fork's Moodle 5.3 branch
 
@@ -121,7 +151,7 @@ Verify: `/plugin list`.
 ### One-liner installer (any non-Claude assistant)
 
 ```
-./install.sh <cursor|copilot|aider|continue|generic> [--dest <path>]
+./install.sh <codex|cursor|copilot|aider|continue|generic> [--dest <path>]
 ```
 
 Defaults to current directory. Or copy manually as below.
@@ -184,7 +214,7 @@ Auto-wired when installing this plugin via marketplace. Requires [`uv`](https://
 brew install uv      # or: pip install uv
 ```
 
-The plugin's `mcpServers` entry runs `uvx --from git+https://github.com/SaadRahman01/moodle-mcp moodle-mcp` on demand — no manual `pipx install` needed.
+The Claude plugin's `mcpServers` entry runs `uvx --from git+https://github.com/SaadRahman01/moodle-mcp moodle-mcp` on demand — no manual `pipx install` needed. The Codex plugin package includes the same optional server configuration; the project installer does not modify Codex MCP settings.
 
 Manual install (any client):
 
@@ -199,7 +229,7 @@ Other clients: see [`moodle-mcp` README](https://github.com/SaadRahman01/moodle-
 
 ## What's inside
 
-### Skills (auto-activate)
+### Claude Code skills (auto-activate)
 
 | Skill | Triggers on |
 |-------|-------------|
@@ -225,6 +255,8 @@ Other clients: see [`moodle-mcp` README](https://github.com/SaadRahman01/moodle-
 
 ### Slash commands
 
+These slash commands are provided by the Claude Code plugin. In Codex, each command workflow is available as a regular skill (for example, `$moodle-new-plugin`).
+
 | Command | What it does |
 |---------|--------------|
 | `/moodle-new-plugin` | Scaffold a new plugin (asks type + name) |
@@ -236,7 +268,7 @@ Other clients: see [`moodle-mcp` README](https://github.com/SaadRahman01/moodle-
 | `/moodle-mustache-lint` | Lint Mustache templates: a11y, security, hard-coded strings |
 | `/moodle-capability-audit` | Cross-check `db/access.php` against runtime `has_capability` use |
 
-### Subagents
+### Subagents (Claude Code)
 
 | Agent | Use case |
 |-------|----------|
@@ -251,7 +283,7 @@ Other clients: see [`moodle-mcp` README](https://github.com/SaadRahman01/moodle-
 
 > Build a `local_attendance_export` plugin that lets teachers export per-course attendance as CSV. Needs a capability, a settings page, and a CLI script.
 
-**Claude (with this plugin loaded) generates:**
+**An assistant with this toolkit installed generates:**
 
 ```
 local/attendance_export/
@@ -302,7 +334,7 @@ See [EXAMPLES.md](EXAMPLES.md) for 30+ prompts covering scaffolding, upgrades, t
 
 ```
 .claude-plugin/         # Claude Code plugin manifest
-skills/                 # canonical skills (Claude reads these directly)
+skills/                 # canonical Moodle skills (Claude Code source)
 agents/                 # canonical subagents
 commands/               # canonical slash commands
 
@@ -312,9 +344,12 @@ adapters/               # generated per-assistant — DO NOT hand-edit
   aider/CONVENTIONS.md + skills/ + commands/
   continue/config.yaml + rules/ + prompts/
   generic/PROMPTS.md    # paste-anywhere single-file bundle
+  codex/                # Codex plugin package + 29 converted skills
+    AGENTS.md           # Moodle project guidance merged by install.sh
+    .codex-plugin/      # plugin manifest
 
 scripts/build-adapters.py   # regenerates adapters/ from canonical files
-install.sh                  # one-liner adapter installer for non-Claude assistants
+install.sh                  # installs the Codex adapter or other assistant adapters
 tests/run.sh                # structural test harness (run before commit)
 docs/ADAPTER_AUTHORING.md   # how to add a new assistant
 .githooks/pre-commit        # phpcs + PHPUnit + version.php monotonicity (install: git config core.hooksPath .githooks)

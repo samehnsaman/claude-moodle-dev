@@ -26,7 +26,7 @@ You will receive an acknowledgement within **72 hours**. A fix or mitigation is 
 ## Scope
 
 In scope:
-- Skill / agent / command content that could lead Claude to generate vulnerable Moodle code (missing `require_sesskey`, SQL injection patterns, capability bypass, etc.)
+- Skill / agent / command content that could lead an assistant to generate vulnerable Moodle code (missing `require_sesskey`, SQL injection patterns, capability bypass, etc.)
 - Prompt-injection vectors inside skill/agent bodies
 - Adapter generation script (`scripts/build-adapters.py`) producing unsafe output
 - CI workflow misconfigurations leaking secrets
@@ -34,7 +34,7 @@ In scope:
 
 Out of scope:
 - Vulnerabilities in Moodle core (report to [Moodle Tracker](https://tracker.moodle.org/))
-- Vulnerabilities in Claude Code itself (report to Anthropic)
+- Vulnerabilities in an assistant product itself (report them to that product's maintainers)
 - Issues that require an attacker to already control the user's editor or shell
 
 ## Disclosure

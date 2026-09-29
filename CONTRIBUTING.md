@@ -1,22 +1,23 @@
 # Contributing to moodle-dev
 
-Thanks for helping make this the best Moodle toolkit for Claude Code.
+Thanks for helping improve the Moodle development toolkit and its assistant adapters.
 
 ## Ways to contribute
 
 - **Add a skill** — covers a Moodle area not yet handled (e.g., `moodle-h5p`, `moodle-lti`, `moodle-analytics`)
-- **Add a slash command** — wraps a common workflow (`/moodle-bump-version`, `/moodle-codestyle`)
-- **Add a subagent** — specialized reviewer / scaffolder
+- **Add a workflow** — add a reusable skill, Claude slash command, or both for a common workflow
+- **Add a specialist** — add Claude agent instructions and a Codex skill adaptation where useful
 - **Improve existing skills** — tighter examples, fix Moodle-version differences, link better docs
 - **Report a gap** — open an issue with a prompt Claude got wrong
 
 ## Project layout
 
 ```
-.claude-plugin/         # plugin + marketplace manifests
-skills/<name>/SKILL.md  # auto-activating expertise
+.claude-plugin/         # Claude Code plugin + marketplace manifests
+skills/<name>/SKILL.md  # canonical reusable skill sources
 commands/<name>.md      # /<name> slash commands
 agents/<name>.md        # invocable subagents
+adapters/codex/         # Codex plugin package and converted skills
 ```
 
 ## Add a skill
@@ -45,7 +46,7 @@ description: Use when <trigger>. Covers <list of topics>. Skip when <negative tr
 ```
 
 Rules:
-- `description` is what Claude matches against — be specific about triggers
+- `description` is used for skill discovery — be specific about task triggers
 - Lead with `When to Use` so the activation contract is clear
 - Show real Moodle code (not pseudo-code), include version notes (`Moodle 4.4+:`)
 - Link `moodledev.io` over wiki / outdated sources
@@ -117,6 +118,8 @@ End-to-end check with Claude Code:
 ```
 
 Then prompt Claude with a Moodle task and confirm the right skill activates (`/skills` to list active skills).
+
+For Codex, run `./install.sh codex --dest <moodle-checkout>` and start a session in that checkout. Confirm `.agents/skills/moodle-plugin-development/SKILL.md` is present and try an example request from `EXAMPLES.md`. Regenerate adapters with `python3 scripts/build-adapters.py` before committing source changes.
 
 ## Adding a new adapter
 

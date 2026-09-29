@@ -1,0 +1,7 @@
+{
+  "name": "moodle-dev",
+  "version": "0.6.0",
+  "description": "Moodle plugin development skills for scaffolding, upgrades, testing, security, privacy, and Moodle 5.3.",
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json"
+}

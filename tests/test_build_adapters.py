@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import importlib.util
+import json
 spec = importlib.util.spec_from_file_location("build_adapters", ROOT / "scripts" / "build-adapters.py")
 ba = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(ba)  # type: ignore[union-attr]
@@ -61,6 +62,31 @@ class LoadAllTests(unittest.TestCase):
         items = ba.load_all()
         agent_names = {fm.get("name") for fm, _, _ in items["agents"]}
         self.assertIn("moodle-reviewer", agent_names)
+
+
+class CodexAdapterTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        ba.build_codex(ba.load_all())
+
+    def test_plugin_manifest_and_mcp_config_parse(self) -> None:
+        manifest = json.loads((ROOT / "adapters/codex/.codex-plugin/plugin.json").read_text())
+        mcp = json.loads((ROOT / "adapters/codex/.mcp.json").read_text())
+        self.assertEqual(manifest["skills"], "./skills/")
+        self.assertEqual(manifest["mcpServers"], "./.mcp.json")
+        self.assertIn("moodle_docs", mcp["mcpServers"])
+
+    def test_workflows_are_codex_skills(self) -> None:
+        for name in ("moodle-new-plugin", "moodle-security-review", "moodle-scaffolder", "moodle-reviewer"):
+            skill = ROOT / "adapters/codex/skills" / name / "SKILL.md"
+            self.assertTrue(skill.is_file(), name)
+            content = skill.read_text()
+            self.assertIn(f"name: {name}", content)
+            self.assertNotIn("$ARGUMENTS", content)
+        self.assertIn("details already provided in the task request", (ROOT / "adapters/codex/skills/moodle-new-plugin/SKILL.md").read_text())
+
+    def test_moodle_53_reference_assets_are_preserved(self) -> None:
+        self.assertTrue((ROOT / "adapters/codex/skills/moodle-5-3-changes/reference.md").is_file())
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# moodle-dev installer for non-Claude-Code assistants.
+# moodle-dev installer for assistants without the native Claude plugin.
 #
 # Usage:
 #   ./install.sh <target> [--dest <dir>]
@@ -10,6 +10,7 @@
 #   aider     -> copies CONVENTIONS.md (and skills/, commands/) into <dest>
 #   continue  -> copies config.yaml + rules + prompts into <dest>/.continue
 #   generic   -> writes adapters/generic/PROMPTS.md into <dest>/MOODLE_PROMPTS.md
+#   codex     -> installs skills into <dest>/.agents/skills and merges Moodle guidance into AGENTS.md
 #
 # Default <dest> is the current directory.
 
@@ -33,6 +34,11 @@ while [ $# -gt 0 ]; do
     *) echo "Unknown arg: $1" >&2; usage ;;
   esac
 done
+
+if [ ! -d "$dest" ]; then
+  echo "Destination does not exist: $dest" >&2
+  exit 1
+fi
 
 dest="$(cd "$dest" && pwd)"
 echo "» Installing moodle-dev ($target) into $dest"
@@ -68,6 +74,27 @@ case "$target" in
   generic)
     cp "$ROOT/adapters/generic/PROMPTS.md" "$dest/MOODLE_PROMPTS.md"
     echo "Done. Paste sections from MOODLE_PROMPTS.md into your assistant's system prompt."
+    ;;
+  codex)
+    copy_tree "$ROOT/adapters/codex/skills" "$dest/.agents/skills"
+    python3 - "$dest/AGENTS.md" "$ROOT/adapters/codex/AGENTS.md" <<'PY'
+from pathlib import Path
+import sys
+
+target, source = map(Path, sys.argv[1:])
+begin = "<!-- moodle-dev:begin -->"
+end = "<!-- moodle-dev:end -->"
+block = f"{begin}\n{source.read_text().strip()}\n{end}"
+current = target.read_text() if target.exists() else ""
+if begin in current and end in current:
+    before, rest = current.split(begin, 1)
+    _, after = rest.split(end, 1)
+    current = before.rstrip() + "\n\n" + block + after
+else:
+    current = current.rstrip() + ("\n\n" if current.strip() else "") + block + "\n"
+target.write_text(current)
+PY
+    echo "Done. Codex skills are in .agents/skills/; Moodle instructions were merged into AGENTS.md."
     ;;
   *)
     echo "Unknown target: $target" >&2

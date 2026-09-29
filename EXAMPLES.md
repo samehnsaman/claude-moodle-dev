@@ -1,6 +1,6 @@
 # Example Prompts
 
-Real prompts that activate this plugin's skills. Drop into Claude Code after installing `moodle-dev`.
+Example requests for supported assistants. For Codex, install with `./install.sh codex --dest /path/to/moodle`; for Claude Code, install the `moodle-dev` plugin.
 
 ## Scaffolding
 

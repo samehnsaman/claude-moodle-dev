@@ -4,9 +4,9 @@ How to add support for a new AI coding assistant.
 
 ## Background
 
-Canonical sources live in `skills/`, `agents/`, `commands/`. These follow the [Claude Code plugin format](https://docs.anthropic.com/claude/docs/claude-code) — frontmatter (`name`, `description`) + markdown body.
+Canonical sources live in `skills/`, `agents/`, and `commands/`. They use Claude Code frontmatter (`name`, `description`) plus a portable Markdown body. The Codex adapter maps the portable skills directly and converts Claude commands and specialist agents into on-demand skill workflows.
 
-Other assistants (Cursor, Copilot, Aider, Continue, …) consume different formats. `scripts/build-adapters.py` reads the canonical sources once and emits one tree per assistant under `adapters/<name>/`.
+Other assistants (Codex, Cursor, Copilot, Aider, Continue, …) consume different formats. `scripts/build-adapters.py` reads the canonical sources once and emits one tree per assistant under `adapters/<name>/`.
 
 **Never hand-edit `adapters/`.** CI fails on drift. Always edit canonical sources, then run the generator.
 
@@ -27,6 +27,7 @@ Each `build_*` function is independent. Add one to support a new assistant.
    - Cursor: `.cursor/rules/<name>.mdc` with frontmatter
    - Copilot: `.github/chatmodes/<name>.chatmode.md`
    - Continue: `~/.continue/config.yaml` + `rules/<name>.md`
+   - Codex: plugin manifest + standard `skills/<name>/SKILL.md` folders; commands and agent procedures become skills
    - Some-new-tool: `.<tool>/system.md` + `.<tool>/prompts/<name>.md`
 
 2. **Write a `build_<tool>(items)` function** in `scripts/build-adapters.py`:
@@ -46,7 +47,7 @@ Each `build_*` function is independent. Add one to support a new assistant.
    build_mytool(items)
    ```
 
-4. **Add an installer target** in `install.sh`:
+4. **Add an installer target** in `install.sh` when output is meant to be copied into a user project:
    ```bash
    mytool)
      copy_tree "$ROOT/adapters/mytool" "$dest/.mytool"

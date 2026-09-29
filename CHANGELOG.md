@@ -5,6 +5,18 @@ All notable changes to `moodle-dev` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Codex adapter with an OpenAI plugin manifest, optional Moodle docs MCP configuration, and 29 standard skills. The 19 Moodle knowledge skills are preserved; eight Claude slash-command workflows and two specialist agent procedures are translated into on-demand Codex skills.
+- `./install.sh codex --dest <moodle-checkout>` installs the skills under `.agents/skills/` and merges Moodle project guidance into `AGENTS.md` without replacing existing content.
+
+### Changed
+
+- README, examples, contribution guidance, and security policy now describe the Codex workflow alongside Claude Code and the existing adapters.
+- Adapter generation tests cover the Codex manifest, MCP configuration, converted workflows, and preserved Moodle 5.3 reference material.
+
 ## [0.6.0] - 2026-09-28
 
 ### Added
